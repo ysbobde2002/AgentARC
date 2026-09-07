@@ -1,3 +1,4 @@
+/** Discover → trust → policy → pay → verify → settle. Pending escrow runs wait here until delivery is confirmed. */
 import { randomUUID } from "node:crypto";
 import { gasRail } from "./circle/paymaster.js";
 import { config, paymentMode } from "./config.js";
