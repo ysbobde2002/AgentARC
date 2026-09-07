@@ -1,5 +1,6 @@
 import type { SellerResponse, VerificationResult } from "./types.js";
 
+/** Independent checks on the seller payload. Not seller-attested. */
 export function verifyResponse(input: {
   response: SellerResponse;
   requestId: string;
