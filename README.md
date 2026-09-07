@@ -140,3 +140,7 @@ flowchart TD
 - **Circle Wallets** · buyer, seller, and operator
 - **Circle Contracts** · `AgentJobEscrow` authorize, capture, void
 
+## Acknowledgments
+
+Guided by [Dheeraj Maske](https://github.com/dhru7777), a friend working in the crypto space. Special thanks to him and the ETH Global team for the opportunity.
+
