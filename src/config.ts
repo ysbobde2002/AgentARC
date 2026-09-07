@@ -3,6 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { arcChain, type ArcNetwork } from "./circle/chain.js";
 
+/** Loads .env then exposes Arc, Circle, and policy settings used across the demo. */
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 function loadEnvFile() {

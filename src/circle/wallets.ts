@@ -5,6 +5,7 @@ import { settledUsd } from "../receipts.js";
 import { arcChain, ERC20_BALANCE_ABI, fromAtomicUsdc } from "./chain.js";
 import { circleErrorMessage, circleReady, getCircleClient, waitForCircleTx } from "./client.js";
 
+/** Circle Agent Wallets for buyer, seller, and operator on Arc. */
 export type WalletSnapshot = {
   role: "buyer" | "seller" | "operator";
   label: string;
