@@ -1,6 +1,7 @@
 import { config } from "./config.js";
 import type { PolicyResult, Service, TrustSignals } from "./types.js";
 
+/** First matching rule wins. Fail closed: missing identity, overspend, or a bad seller never spends USDC. */
 export function evaluatePolicy(input: {
   maxSpendUsd: number;
   service: Service;
