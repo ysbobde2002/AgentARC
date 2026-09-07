@@ -1,32 +1,34 @@
 # AgentARC
 
-Track 1: **Best Agentic Economy Application with Circle Agent Stack** · $1,667
+Track 1: **Best Agentic Economy Application with Circle Agent Stack**
 
 Build autonomous agents that transact on Arc. A buyer agent holds a Circle Agent Wallet, finds a payable service, decides whether to pay, and settles in USDC. Small live ETH calls are **Nanopayments**. The research memo uses **AuthCapture escrow**.
 
-There is no public x402 seller on Arc testnet, so this repo runs one.
-
 ## Links
 
-| Field | Value |
-|---|---|
-| **Project** | AgentARC |
-| **Repo** | https://github.com/ysbobde2002/AgentARC |
-| **Live demo** | https://agentarc-production.up.railway.app |
-| **Architecture** | https://agentarc-production.up.railway.app/architecture |
-| **Presentation** | https://canva.link/zc8k9kynpnxexvi |
+
+| Field            | Value                                                                                                              |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------ |
+| **Project**      | AgentARC                                                                                                           |
+| **Repo**         | [https://github.com/ysbobde2002/AgentARC](https://github.com/ysbobde2002/AgentARC)                                 |
+| **Live demo**    | [https://agentarc-production.up.railway.app](https://agentarc-production.up.railway.app)                           |
+| **Architecture** | [https://agentarc-production.up.railway.app/architecture](https://agentarc-production.up.railway.app/architecture) |
+| **Presentation** | [https://canva.link/zc8k9kynpnxexvi](https://canva.link/zc8k9kynpnxexvi)                                           |
+
+
+
 
 ## What we built
 
 A working frontend and backend. Agents hold wallets, spend USDC, and settle jobs on Arc using Circle Agent Stack.
-
-What judges will see paid on Arc:
 
 - `Get me the current ETH price. Spend up to $0.05` · DIRECT nanopayment
 - `Get ETH chart details. Spend up to $0.05` · DIRECT OHLC
 - `Buy the ETH research memo. Spend up to $150` · PROTECTED escrow, then capture or void
 
 ## The four problems
+
+
 
 ### Identity
 
@@ -49,6 +51,8 @@ We parse intent and the spend cap from the prompt. Circle Agent Marketplace give
 - x402 seller on Arc
 - Circle Agent Marketplace (median only)
 
+
+
 ### Policy engine
 
 Should this agent pay at all? If yes, is this a nanopayment, or does the money need to sit until delivery is proven?
@@ -58,6 +62,8 @@ Policy is ours. Circle supplies the two rails: Nanopayments for small instant jo
 - Reject: no identity / over spend cap / 3 or more failures
 - DIRECT: $1 or less, instant, objective → Nanopayments
 - PROTECTED: $100 or more, or lagged → AuthCapture
+
+
 
 ### Protected settlement
 
@@ -69,6 +75,8 @@ On Arc we authorize USDC into escrow, verify independently, then capture to the 
 - Merchant: capture is final · no chargebacks
 - AuthCapture: authorize → verify → capture or void
 - Nanopayments: instant, no per-call refund
+
+
 
 ## Architecture
 
@@ -91,6 +99,8 @@ flowchart LR
   Verify -->|fail| Void[Void escrow]
 ```
 
+
+
 ```mermaid
 flowchart TD
   Start[evaluatePolicy] --> Id{Identity verified?}
@@ -106,13 +116,21 @@ flowchart TD
   Nano -->|no| P2[PROTECTED]
 ```
 
+
+
+
+
 ## Seller catalog
 
-| Path | Price | Rail |
-|---|---|---|
-| `GET /charts/ETH` | 0.01 USDC | Nanopayment |
-| `GET /charts/ETH/ohlc` | 0.02 USDC | Nanopayment |
-| `GET /research/ETH` | 100 USDC | AuthCapture escrow |
+
+| Path                   | Price     | Rail               |
+| ---------------------- | --------- | ------------------ |
+| `GET /charts/ETH`      | 0.01 USDC | Nanopayment        |
+| `GET /charts/ETH/ohlc` | 0.02 USDC | Nanopayment        |
+| `GET /research/ETH`    | 100 USDC  | AuthCapture escrow |
+
+
+
 
 ## Circle products
 
@@ -121,3 +139,4 @@ flowchart TD
 - **Agent Stack** · Agent Wallets, Marketplace (median only), Nanopayments
 - **Circle Wallets** · buyer, seller, and operator
 - **Circle Contracts** · `AgentJobEscrow` authorize, capture, void
+
