@@ -1,0 +1,30 @@
+{
+  "name": "agent-commerce-arc",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Agent-to-agent commerce on Arc: nanopayments for instant micros, AuthCapture escrow for large protected payments.",
+  "scripts": {
+    "dev": "tsx watch cli/serve.ts",
+    "start": "tsx cli/serve.ts",
+    "demo": "tsx cli/serve.ts",
+    "seller": "tsx cli/seller.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "setup:wallets": "tsx scripts/setup-wallets.ts",
+    "setup:entity": "tsx scripts/register-entity-secret.ts"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@circle-fin/developer-controlled-wallets": "^10.8.0",
+    "tsx": "^4.19.0",
+    "viem": "^2.56.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.1",
+    "typescript": "^5.8.0",
+    "vitest": "^3.1.0"
+  }
+}
