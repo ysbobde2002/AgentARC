@@ -27,6 +27,7 @@ function paymentHeader(req: IncomingMessage) {
   );
 }
 
+/** Arc x402 seller: unpaid GETs return HTTP 402, then settle and serve the quote. */
 export async function handleSellerRequest(
   req: IncomingMessage,
   res: ServerResponse,
