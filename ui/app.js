@@ -826,7 +826,7 @@ async function runTransaction(prompt, extra = {}) {
   showVerification(result);
   if (result.awaitingDelivery) {
     showReceipt(result);
-    await sleep(2500);
+    await sleep(tourActive ? 4500 : 2500);
     askDelivery(result);
     await loadIdentities();
     return;
@@ -844,6 +844,272 @@ function looksLikeLiveEth(prompt) {
   if (/\b20\d{2}\b/.test(t)) return false;
   return true;
 }
+
+let tourActive = false;
+let tourResolveNext = null;
+let tourToken = 0;
+
+function clearTourHighlight() {
+  document.querySelectorAll(".tour-pulse").forEach((el) => el.classList.remove("tour-pulse"));
+  const spot = $("tourSpot");
+  if (spot) {
+    spot.style.opacity = "0";
+  }
+}
+
+function placeTourTip(target) {
+  const tip = $("tourTip");
+  const spot = $("tourSpot");
+  if (!tip || !spot) return;
+  const pad = 8;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  if (target) {
+    const r = target.getBoundingClientRect();
+    spot.style.opacity = "1";
+    spot.style.top = `${Math.max(4, r.top - pad)}px`;
+    spot.style.left = `${Math.max(4, r.left - pad)}px`;
+    spot.style.width = `${Math.min(vw - 8, r.width + pad * 2)}px`;
+    spot.style.height = `${Math.min(vh - 8, r.height + pad * 2)}px`;
+    target.classList.add("tour-pulse");
+    const tipW = Math.min(320, vw - 24);
+    let left = Math.min(vw - tipW - 12, Math.max(12, r.left));
+    let top = r.bottom + 14;
+    if (top + 180 > vh) top = Math.max(12, r.top - 190);
+    tip.style.left = `${left}px`;
+    tip.style.top = `${top}px`;
+  } else {
+    spot.style.opacity = "0";
+    tip.style.left = `${Math.max(12, (vw - 320) / 2)}px`;
+    tip.style.top = `${Math.max(24, vh * 0.28)}px`;
+  }
+}
+
+function openTourUi() {
+  const root = $("tourRoot");
+  if (!root) return;
+  root.hidden = false;
+}
+
+function closeTourUi() {
+  const root = $("tourRoot");
+  if (root) root.hidden = true;
+  clearTourHighlight();
+  if (tourResolveNext) {
+    tourResolveNext();
+    tourResolveNext = null;
+  }
+}
+
+async function waitForSelector(selector, { timeout = 45000, predicate } = {}) {
+  const start = Date.now();
+  while (Date.now() - start < timeout) {
+    if (!tourActive) throw new Error("tour-aborted");
+    const el = document.querySelector(selector);
+    if (el && (!predicate || predicate(el))) return el;
+    await sleep(120);
+  }
+  throw new Error(`Timed out waiting for ${selector}`);
+}
+
+async function waitWhileBusy(timeout = 60000) {
+  const start = Date.now();
+  while (Date.now() - start < timeout) {
+    if (!tourActive) throw new Error("tour-aborted");
+    if (!playing) return;
+    await sleep(120);
+  }
+  throw new Error("Timed out waiting for the demo to finish a step");
+}
+
+function waitForTourNext(autoMs = 0) {
+  return new Promise((resolve) => {
+    tourResolveNext = () => {
+      tourResolveNext = null;
+      resolve("next");
+    };
+    if (autoMs > 0) {
+      setTimeout(() => {
+        if (tourResolveNext) {
+          tourResolveNext();
+        }
+      }, autoMs);
+    }
+  });
+}
+
+async function runTourStep({ step, total, title, body, target, nextLabel = "Next", autoMs = 4500, action }) {
+  if (!tourActive) return;
+  clearTourHighlight();
+  $("tourStep").textContent = `${step} / ${total}`;
+  $("tourTitle").textContent = title;
+  $("tourBody").textContent = body;
+  $("tourNext").textContent = nextLabel;
+  placeTourTip(target || null);
+  // Let the highlight settle before the countdown feels urgent.
+  await sleep(500);
+  if (!tourActive) return;
+  await waitForTourNext(autoMs);
+  if (!tourActive) return;
+  if (typeof action === "function") {
+    await action();
+    // Give people time to watch the UI react after each click.
+    await sleep(1200);
+  }
+}
+
+async function startShopifyTutorial() {
+  if (tourActive || playing) return;
+  const token = ++tourToken;
+  tourActive = true;
+  $("tutorialBtn").disabled = true;
+  const fail = $("failToggle");
+  if (fail) fail.checked = false;
+  closeDeliveryModal();
+  openTourUi();
+
+  const total = 7;
+  try {
+    await runTourStep({
+      step: 1,
+      total,
+      title: "Shopify walkthrough",
+      body: "We will order chocolates on Shopify, approve the spend from your Circle Agent Wallet, then confirm delivery so escrow can settle.",
+      target: $("buyerPanel"),
+      nextLabel: "Start",
+      autoMs: 0,
+    });
+    if (!tourActive || token !== tourToken) return;
+
+    const chip = document.querySelector('.prompt-chip[data-q="Find me chocolates under $10"]');
+    await runTourStep({
+      step: 2,
+      total,
+      title: "Ask for something",
+      body: "Tap chocolates. ARC Agent searches Shopify with your spend cap.",
+      target: chip,
+      nextLabel: "Click chocolates",
+      autoMs: 5500,
+      action: () => chip?.click(),
+    });
+    if (!tourActive || token !== tourToken) return;
+
+    clearTourHighlight();
+    $("tourBody").textContent = "Searching Shopify… watch the seller panel fill with listings.";
+    $("tourTitle").textContent = "Discovery";
+    $("tourStep").textContent = `3 / ${total}`;
+    placeTourTip($("sellerPanel"));
+    await waitWhileBusy();
+    await sleep(1500);
+    const offer = await waitForSelector(".chat-offer.pick, .chat-offer");
+    if (!tourActive || token !== tourToken) return;
+
+    await runTourStep({
+      step: 3,
+      total,
+      title: "Pick a product",
+      body: "Shopify listings appear here. We select the recommended item for you.",
+      target: offer,
+      nextLabel: "Select item",
+      autoMs: 5500,
+      action: () => offer?.click(),
+    });
+    if (!tourActive || token !== tourToken) return;
+
+    const approve = await waitForSelector('button.approve-btn[data-decision="approve"]');
+    await sleep(800);
+    await runTourStep({
+      step: 4,
+      total,
+      title: "Approve the spend",
+      body: "Approve locks the order into policy and AuthCapture escrow. USDC does not leave until delivery is confirmed.",
+      target: approve,
+      nextLabel: "Approve",
+      autoMs: 6000,
+      action: () => approve?.click(),
+    });
+    if (!tourActive || token !== tourToken) return;
+
+    clearTourHighlight();
+    $("tourTitle").textContent = "Policy and escrow";
+    $("tourBody").textContent = "Watch the top phases light up. Policy chooses PROTECTED escrow for Shopify purchases. A receipt appears, then the delivery question.";
+    $("tourStep").textContent = `5 / ${total}`;
+    placeTourTip($("phases") || document.querySelector(".phases"));
+    await waitForSelector("#deliveryModal", {
+      timeout: 90000,
+      predicate: (el) => el.open || el.hasAttribute("open"),
+    });
+    await sleep(1200);
+    if (!tourActive || token !== tourToken) return;
+
+    const yes = $("deliveryYes");
+    const modal = $("deliveryModal");
+    let inlineNote = null;
+    if (modal) {
+      inlineNote = document.createElement("div");
+      inlineNote.className = "tour-inline-note";
+      inlineNote.textContent = "Tutorial: click Yes to capture escrow to the seller. No would refund you.";
+      modal.insertBefore(inlineNote, modal.firstChild);
+    }
+    await runTourStep({
+      step: 6,
+      total,
+      title: "Did you receive the item?",
+      body: "Yes captures escrow to the seller. No raises a dispute and refunds your Agent Wallet. We will click Yes.",
+      target: yes,
+      nextLabel: "Click Yes",
+      autoMs: 6500,
+      action: () => yes?.click(),
+    });
+    inlineNote?.remove();
+    if (!tourActive || token !== tourToken) return;
+
+    clearTourHighlight();
+    $("tourTitle").textContent = "Settling";
+    $("tourBody").textContent = "Escrow is capturing USDC to the seller. Watch the receipt and wallet update.";
+    $("tourStep").textContent = `7 / ${total}`;
+    placeTourTip($("feedBuyer"));
+    await waitWhileBusy();
+    await sleep(1800);
+    if (!tourActive || token !== tourToken) return;
+
+    await runTourStep({
+      step: 7,
+      total,
+      title: "You finished a purchase",
+      body: "Try again anytime: ask for flowers, umbrellas, or sneakers with a budget. Use No on the delivery dialog to see a dispute refund.",
+      target: $("buyerPanel"),
+      nextLabel: "Done",
+      autoMs: 0,
+    });
+  } catch (err) {
+    if (String(err.message || err) !== "tour-aborted") {
+      addBubble($("feedBuyer"), "sys", `Tutorial stopped: ${err.message || err}`);
+    }
+  } finally {
+    tourActive = false;
+    closeTourUi();
+    $("tutorialBtn").disabled = false;
+  }
+}
+
+$("tutorialBtn")?.addEventListener("click", () => {
+  startShopifyTutorial();
+});
+$("tourSkip")?.addEventListener("click", () => {
+  tourActive = false;
+  tourToken += 1;
+  closeTourUi();
+  $("tutorialBtn").disabled = false;
+});
+$("tourNext")?.addEventListener("click", () => {
+  if (tourResolveNext) tourResolveNext();
+});
+window.addEventListener("resize", () => {
+  if (!tourActive) return;
+  const pulsed = document.querySelector(".tour-pulse");
+  placeTourTip(pulsed);
+});
 
 fillCategories();
 loadIdentities().catch(() => {

@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/styles.css?v=arch14" />
+  <link rel="stylesheet" href="/styles.css?v=arch16" />
 </head>
 <body>
   <header class="header">
@@ -115,7 +115,10 @@
   </main>
 
   <footer class="demo-footer">
-    <a class="arch-btn" href="/architecture">Architecture</a>
+    <div class="footer-actions">
+      <button type="button" class="arch-btn" id="tutorialBtn">Tutorial</button>
+      <a class="arch-btn" href="/architecture">Architecture</a>
+    </div>
     <div class="fail-row">
       <label class="fail-toggle">
         <input type="checkbox" id="failToggle" />
@@ -133,6 +136,21 @@
       <button type="button" class="approve-btn reject" id="deliveryNo">No</button>
     </div>
   </dialog>
-  <script src="/app.js?v=arch4"></script>
+
+  <div class="tour-root" id="tourRoot" hidden>
+    <div class="tour-veil" id="tourVeil" aria-hidden="true"></div>
+    <div class="tour-spotlight" id="tourSpot" aria-hidden="true"></div>
+    <div class="tour-tip" id="tourTip" role="dialog" aria-live="polite">
+      <div class="tour-step" id="tourStep">1 / 7</div>
+      <div class="tour-title" id="tourTitle">Tutorial</div>
+      <div class="tour-body" id="tourBody"></div>
+      <div class="tour-actions">
+        <button type="button" class="tour-skip" id="tourSkip">Skip</button>
+        <button type="button" class="approve-btn" id="tourNext">Next</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/app.js?v=arch6"></script>
 </body>
 </html>
