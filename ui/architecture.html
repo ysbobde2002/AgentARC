@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Architecture · AgentARC</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css?v=arch11" />
+</head>
+<body class="arch-body">
+  <header class="nav">
+    <a class="logo" href="/">
+      <span class="coin" aria-hidden="true">A</span>
+      <span class="logo-text">AgentARC</span>
+    </a>
+    <nav class="nav-links">
+      <a href="/">Demo</a>
+      <a href="/architecture">Architecture</a>
+    </nav>
+    <div class="nav-right">
+      <span class="mode-pill" id="modePill">adapter</span>
+    </div>
+  </header>
+
+  <main class="page arch-page">
+    <h1 class="arch-title">Agent payment flow</h1>
+
+    <div class="arch-pair">
+      <div class="arch-col">
+      <h2 class="arch-h2">System</h2>
+      <section class="arch-board" data-fit="width">
+        <div class="arch-board-bar">
+          <span>Drag or scroll to pan</span>
+          <div class="zoom-btns">
+            <button type="button" data-zoom="-">−</button>
+            <button type="button" data-zoom="fit">Fit</button>
+            <button type="button" data-zoom="+">+</button>
+          </div>
+        </div>
+        <div class="arch-viewport">
+          <div class="arch-sizer">
+            <div class="arch-zoom">
+              <pre class="mermaid">
+flowchart TD
+  Human["Human"] -->|prompt| UI["ui/app.js"]
+  UI -->|POST /api/turn| Server[":5180
+Circle Wallets"]
+  Server --> Intent["parseIntent"]
+  Intent --> UCP["Shopify UCP"]
+  Intent --> Cat[":5181 catalog
+Arc"]
+  Cat --> Cover{"live ETH?"}
+  Cover -->|no| Reject["Reject unpaid"]
+  Cover -->|yes| Policy["policy.ts"]
+  UCP --> Policy
+  Scan["8004scan"] --> Buyer["buyer #9638"]
+  Scan --> Sid["seller #6832"]
+  Sid --> Policy
+  Policy --> Gate{"Approve?"}
+  Gate -->|no| Stop["Stop"]
+  Gate -->|DIRECT| Nano["HTTP 402
+Nanopayments"]
+  Gate -->|PROTECTED| Escrow["AuthCapture
+Circle Contracts"]
+  Nano --> Verify["verify.ts"]
+  Escrow --> Verify
+  Verify -->|pass| Receipt["Receipt
+Arc · USDC"]
+  Verify -->|fail| Void["Void
+Circle Contracts"]
+              </pre>
+            </div>
+          </div>
+        </div>
+      </section>
+      </div>
+
+      <div class="arch-col">
+      <h2 class="arch-h2">Two payment rails</h2>
+      <section class="arch-board" data-fit="width">
+        <div class="arch-board-bar">
+          <span>Drag or scroll to pan</span>
+          <div class="zoom-btns">
+            <button type="button" data-zoom="-">−</button>
+            <button type="button" data-zoom="fit">Fit</button>
+            <button type="button" data-zoom="+">+</button>
+          </div>
+        </div>
+        <div class="arch-viewport">
+          <div class="arch-sizer">
+            <div class="arch-zoom arch-zoom-split">
+              <pre class="mermaid">
+flowchart TB
+  DH["DIRECT · Nanopayments"] --> G1["GET /charts/ETH
+Arc"]
+  G1 --> P402["HTTP 402
+Nanopayments"]
+  P402 --> Sign["Buyer signs
+Circle Wallets"]
+  Sign --> Retry["PAYMENT-SIGNATURE
+Gateway"]
+  Retry --> Data["CoinGecko payload
+USDC"]
+              </pre>
+              <pre class="mermaid">
+flowchart TB
+  PH["PROTECTED · Circle Contracts"] --> Auth["Authorize USDC
+Circle Wallets"]
+  Auth --> G2["GET /research/ETH
+Arc"]
+  G2 --> V["Verify"]
+  V --> Rec{"received?"}
+  Rec -->|yes| Cap2["Capture
+Circle Contracts"]
+  Rec -->|no| Void2["Void
+Circle Contracts"]
+              </pre>
+            </div>
+          </div>
+        </div>
+      </section>
+      </div>
+    </div>
+
+    <h2 class="arch-h2">Policy engine</h2>
+    <section class="arch-board arch-board-compact" data-fit="width">
+      <div class="arch-board-bar">
+        <span>Drag or scroll to pan</span>
+        <div class="zoom-btns">
+          <button type="button" data-zoom="-">−</button>
+          <button type="button" data-zoom="fit">Fit</button>
+          <button type="button" data-zoom="+">+</button>
+        </div>
+      </div>
+      <div class="arch-viewport">
+        <div class="arch-sizer">
+          <div class="arch-zoom">
+            <pre class="mermaid">
+flowchart LR
+  Start["evaluatePolicy"] --> Id{"identity?
+ERC-8004"}
+  Id -->|missing| R1["REJECT"]
+  Id -->|ok| Cap{"over spend?
+USDC"}
+  Cap -->|yes| R2["REJECT"]
+  Cap -->|no| Fail{"3 failures?"}
+  Fail -->|yes| R3["REJECT"]
+  Fail -->|no| Big{"100-plus or lagged?"}
+  Big -->|yes| P1["PROTECTED
+Circle Contracts"]
+  Big -->|no| Nano{"1 or less instant?"}
+  Nano -->|yes| D1["DIRECT
+Nanopayments"]
+  Nano -->|no| P2["PROTECTED
+Circle Contracts"]
+            </pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="paper" style="margin-top:28px">
+      <div class="paper-head"><strong>Module boundaries</strong></div>
+      <div class="lld-table-wrap" id="boundaries"></div>
+    </section>
+
+    <section class="arch-grid" id="products"></section>
+  </main>
+
+  <footer class="site-foot">
+    <span>AgentARC · high-level design</span>
+    <span id="footMode">adapter mode</span>
+  </footer>
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: "base",
+      securityLevel: "strict",
+      themeVariables: {
+        fontFamily: "Inter, sans-serif",
+        fontSize: "14px",
+        primaryColor: "#ff90e8",
+        primaryTextColor: "#111",
+        primaryBorderColor: "#111",
+        secondaryColor: "#f1f333",
+        secondaryTextColor: "#111",
+        secondaryBorderColor: "#111",
+        tertiaryColor: "#ffffff",
+        tertiaryTextColor: "#111",
+        tertiaryBorderColor: "#111",
+        lineColor: "#111",
+        textColor: "#111",
+        nodeBorder: "#111",
+        mainBkg: "#ffffff",
+        clusterBkg: "#fafafa",
+        clusterBorder: "#111",
+      },
+      flowchart: {
+        htmlLabels: true,
+        curve: "basis",
+        padding: 10,
+        nodeSpacing: 22,
+        rankSpacing: 30,
+        useMaxWidth: false,
+      },
+    });
+    await mermaid.run({ querySelector: ".mermaid" });
+    window.setupArchZoom?.();
+  </script>
+  <script src="/architecture.js?v=arch11"></script>
+</body>
+</html>

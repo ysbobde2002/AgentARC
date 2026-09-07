@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AgentARC · Buyer × Shopify × Digital</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css?v=arch11" />
+</head>
+<body>
+  <header class="header">
+    <a class="brand" href="/">
+      <span class="coin" aria-hidden="true">A</span>
+      <div class="brand-name">AgentARC</div>
+    </a>
+    <div class="phases" id="phases">
+      <div class="phase-step" data-phase="intent"><div class="phase-dot"></div><div class="phase-label">intent</div></div>
+      <div class="phase-connector"></div>
+      <div class="phase-step" data-phase="discover"><div class="phase-dot"></div><div class="phase-label">discover</div></div>
+      <div class="phase-connector"></div>
+      <div class="phase-step" data-phase="trust"><div class="phase-dot"></div><div class="phase-label">trust</div></div>
+      <div class="phase-connector"></div>
+      <div class="phase-step" data-phase="policy"><div class="phase-dot"></div><div class="phase-label">policy</div></div>
+      <div class="phase-connector"></div>
+      <div class="phase-step" data-phase="pay"><div class="phase-dot"></div><div class="phase-label">pay</div></div>
+      <div class="phase-connector"></div>
+      <div class="phase-step" data-phase="verify"><div class="phase-dot"></div><div class="phase-label">verify</div></div>
+      <div class="phase-connector"></div>
+      <div class="phase-step" data-phase="settle"><div class="phase-dot"></div><div class="phase-label">settle</div></div>
+      <div class="phase-connector"></div>
+      <div class="phase-step" data-phase="receipt"><div class="phase-dot"></div><div class="phase-label">receipt</div></div>
+    </div>
+    <span class="mode-pill" id="modePill">adapter</span>
+  </header>
+
+  <main class="stage">
+    <section class="phone-col" id="buyerPanel">
+      <div class="iphone">
+        <span class="hw-btn silent" aria-hidden="true"></span>
+        <span class="hw-btn vol-up" aria-hidden="true"></span>
+        <span class="hw-btn vol-down" aria-hidden="true"></span>
+        <span class="hw-btn power" aria-hidden="true"></span>
+        <div class="iphone-screen">
+          <div class="island" aria-hidden="true"></div>
+          <div class="status-bar">
+            <span>9:41</span>
+            <span class="status-icons" aria-hidden="true">
+              <span class="sig"></span><span class="sig"></span><span class="sig"></span><span class="sig"></span>
+              <span class="wifi"></span>
+              <span class="batt"></span>
+            </span>
+          </div>
+          <div class="imessage-nav">
+            <div class="pop-wrap" id="buyerProfileWrap">
+              <button type="button" class="arc-avatar" title="ARC Agent profile">A</button>
+            </div>
+            <div class="imessage-meta">
+              <div class="imessage-name">ARC Agent</div>
+              <div class="imessage-sub" id="buyerSub">Circle Agent Wallet</div>
+            </div>
+            <div class="pop-wrap" id="buyerWalletWrap">
+              <button type="button" class="wallet-chip" title="Your Agent Wallet">
+                <span class="wallet-dollar">$</span>
+                <span id="buyerWalletChip">wallet</span>
+              </button>
+            </div>
+          </div>
+          <div class="wallet-sheet" id="buyerWalletPop"></div>
+          <div class="profile-sheet" id="buyerPopover"></div>
+          <div class="feed" id="feedBuyer"></div>
+          <div class="try-row" id="tryRow">
+            <button type="button" class="prompt-chip" data-q="Find me chocolates under $10">chocolates</button>
+            <button type="button" class="prompt-chip" data-q="Get me the current ETH price. Spend up to $0.05">ETH tick</button>
+            <button type="button" class="prompt-chip" data-q="Get ETH chart details. Spend up to $0.05">ETH chart</button>
+            <button type="button" class="prompt-chip" data-q="Buy the ETH research memo. Spend up to $150">ETH memo</button>
+          </div>
+          <form class="composer" id="form">
+            <input id="q" placeholder="Message ARC Agent" autocomplete="off" />
+            <button type="submit" aria-label="Send">↑</button>
+          </form>
+          <div class="home-ind" aria-hidden="true"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="sellerPanel">
+      <div class="panel-head">
+        <div class="panel-icon">S</div>
+        <div class="panel-meta">
+          <div class="panel-name" id="sellerName">Shopify Agent</div>
+          <div class="panel-sub" id="sellerSub">Circle Agent Wallet · loading</div>
+        </div>
+        <div class="panel-actions">
+          <div class="pop-wrap">
+            <button type="button" class="profile-btn" title="Seller profile">◎</button>
+            <div class="popover pop-left" id="sellerPopover"></div>
+          </div>
+          <div class="pop-wrap" id="sellerWalletWrap">
+            <button type="button" class="wallet-btn" title="Seller wallet">$</button>
+            <div class="popover pop-left" id="sellerWalletPop"></div>
+          </div>
+        </div>
+      </div>
+      <div class="seller-tabs">
+        <button type="button" class="tab-btn active" data-tab="shopify">Shopify UCP</button>
+        <button type="button" class="tab-btn" data-tab="digital">Arc x402</button>
+      </div>
+      <div class="category-row" id="categoryRow" hidden></div>
+      <div class="feed" id="feedSeller">
+        <div class="empty-hint">Waiting on ARC Agent</div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="demo-footer">
+    <a class="arch-btn" href="/architecture">Architecture</a>
+    <div class="fail-row">
+      <label class="fail-toggle">
+        <input type="checkbox" id="failToggle" />
+        Simulate seller failure
+      </label>
+      <span class="rail-badge" id="railBadge">rail · idle</span>
+    </div>
+  </footer>
+
+  <script src="/app.js?v=arch1"></script>
+</body>
+</html>
