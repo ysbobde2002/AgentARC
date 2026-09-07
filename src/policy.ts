@@ -15,7 +15,7 @@ export function evaluatePolicy(input: {
       decision: "REJECT",
       rail: "DIRECT",
       protectionLevel: "DIRECT",
-      reasons: ["Seller ERC-8004 identity missing — fail closed"],
+      reasons: ["Seller ERC-8004 identity is missing, so payment is blocked."],
     };
   }
 
@@ -25,7 +25,7 @@ export function evaluatePolicy(input: {
       rail: "DIRECT",
       protectionLevel: "DIRECT",
       reasons: [
-        `Price ${service.priceUsd} USDC exceeds max spend ${maxSpendUsd} USDC`,
+        `Price ${service.priceUsd} USDC exceeds the ${maxSpendUsd} USDC spend cap.`,
       ],
     };
   }
@@ -35,25 +35,25 @@ export function evaluatePolicy(input: {
       decision: "REJECT",
       rail: "PROTECTED",
       protectionLevel: "PROTECTED_SETTLEMENT",
-      reasons: [`Seller has ${trust.recentFailures} recent failures — fail closed`],
+      reasons: [`Seller has ${trust.recentFailures} recent failures, so payment is blocked.`],
     };
   }
 
   if (trust.x402Supported) {
-    reasons.push("Seller advertises x402 — nanopayment-capable");
+    reasons.push("Seller supports x402 nanopayments.");
   }
   if (trust.source === "erc-8004") {
     reasons.push(
-      `Live ERC-8004 #${trust.agentId} · ${trust.reputationSignals} feedback · ${trust.validationSignals} validations`,
+      `Seller ERC-8004 identity #${trust.agentId} is live, with ${trust.reputationSignals} feedback and ${trust.validationSignals} validations.`,
     );
   } else {
-    reasons.push("Seller ERC-8004 identity available");
+    reasons.push("Seller ERC-8004 identity is available.");
   }
-  reasons.push(`Spend cap ${maxSpendUsd} USDC covers ${service.priceUsd} USDC`);
+  reasons.push(`Spend cap of ${maxSpendUsd} USDC covers the ${service.priceUsd} USDC price.`);
 
   if (input.marketplaceMedianUsd != null) {
     reasons.push(
-      `Agent Marketplace median ${input.marketplaceMedianUsd.toFixed(4)} USDC vs our ${service.priceUsd} USDC`,
+      `Circle marketplace median is ${input.marketplaceMedianUsd.toFixed(4)} USDC versus our ${service.priceUsd} USDC price.`,
     );
   }
 
@@ -66,8 +66,8 @@ export function evaluatePolicy(input: {
   if (large || !service.objective || service.delivery === "lagged") {
     reasons.push(
       large
-        ? `Amount ≥ ${config.policy.protectMinUsd} USDC — escrow, not a nanopayment`
-        : "Service is lagged or subjective — hold funds until verification",
+        ? `Amount is ${config.policy.protectMinUsd} USDC or more, so this uses escrow instead of a nanopayment.`
+        : "Delivery is lagged or subjective, so funds stay in escrow until verification.",
     );
     return {
       decision: "APPROVE",
@@ -79,7 +79,7 @@ export function evaluatePolicy(input: {
 
   if (nano) {
     reasons.push(
-      `Amount ≤ ${config.policy.nanoMaxUsd} USDC, instant, objective — nanopayment, no escrow`,
+      `Amount is ${config.policy.nanoMaxUsd} USDC or less and the result is instant, so this is a nanopayment.`,
     );
     return {
       decision: "APPROVE",
@@ -89,7 +89,7 @@ export function evaluatePolicy(input: {
     };
   }
 
-  reasons.push("Defaulting to protected settlement");
+  reasons.push("Defaulting to protected escrow.");
   return {
     decision: "APPROVE",
     rail: "PROTECTED",

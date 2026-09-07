@@ -103,17 +103,23 @@ function addHtml(feed, html, kind = "inc", label = "ARC Agent") {
   return wrap;
 }
 
-function addCollapseCard(feed, title, summary, rows) {
+function addCollapseCard(feed, title, summary, rows, extras) {
   const wrap = document.createElement("div");
   wrap.className = "bwrap recv";
   const details = document.createElement("details");
   details.className = "kv-details";
+  const list = extras?.list?.filter(Boolean) || [];
   details.innerHTML =
     `<summary><span>${esc(title)}</span><strong>${esc(summary)}</strong></summary>` +
     `<div class="kv-details-body">` +
     Object.entries(rows)
       .map(([k, v]) => `<div class="kv"><span>${esc(k)}</span><strong>${esc(String(v))}</strong></div>`)
       .join("") +
+    (list.length
+      ? `<div class="kv-list"><div class="kv-list-label">${esc(extras.listLabel || "Why")}</div><ul>${list
+          .map((item) => `<li>${esc(item)}</li>`)
+          .join("")}</ul></div>`
+      : "") +
     `</div>`;
   wrap.appendChild(details);
   feed.appendChild(wrap);
@@ -628,7 +634,7 @@ function paymentCopy(result) {
   const amount = result.payment?.amountUsd;
   const paid = Number(amount) > 0 || Boolean(result.payment?.settleTxHash || result.receipt?.paymentTxHash);
   if (result.policy?.decision === "REJECT") {
-    return (result.policy.reasons || [])[0] || "Fail closed — no payment sent.";
+    return (result.policy.reasons || [])[0] || "Fail closed. No payment sent.";
   }
   if (rail === "DIRECT") {
     if (outcome === "FAILED") {
@@ -639,10 +645,10 @@ function paymentCopy(result) {
     return `Paid ${amount} USDC from your Agent Wallet.`;
   }
   if (result.awaitingDelivery || outcome === "HELD") {
-    return `${amount} USDC locked in operator escrow. Seller cannot spend until you confirm you received it.`;
+    return `${amount} USDC locked in operator escrow. Seller cannot spend until you confirm delivery.`;
   }
   if (outcome === "VOIDED") {
-    return `${amount} USDC refunded to your Agent Wallet. Seller was not paid.`;
+    return `Dispute raised. ${amount} USDC refunded to your Agent Wallet. Seller was not paid.`;
   }
   return `${amount} USDC released from escrow to the seller.`;
 }
@@ -687,7 +693,7 @@ function showVerification(result) {
 }
 
 function showReceipt(result) {
-  if (!result.receipt || result.receipt.outcome === "HELD") return;
+  if (!result.receipt) return;
   addCollapseCard($("feedBuyer"), "Receipt", `${result.receipt.outcome} · ${result.receipt.amount} USDC`, {
     Service: result.receipt.service,
     Amount: `${result.receipt.amount} USDC`,
@@ -698,28 +704,32 @@ function showReceipt(result) {
   });
 }
 
+function closeDeliveryModal() {
+  const modal = $("deliveryModal");
+  if (modal?.open) modal.close();
+}
+
 function askDelivery(result) {
-  const title = result.service?.name || "this order";
-  const wrap = addHtml(
-    $("feedBuyer"),
-    `<div>Did you receive <b>${esc(title)}</b>?</div>
-     <div class="approve-row">
-       <button type="button" class="approve-btn" data-received="yes">Yes, release to seller</button>
-       <button type="button" class="approve-btn reject" data-received="no">No, refund me</button>
-     </div>`,
-    "inc",
-    "human",
-  );
-  wrap.querySelectorAll(".approve-btn").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      wrap.querySelectorAll(".approve-btn").forEach((b) => {
-        b.disabled = true;
-      });
-      const received = btn.dataset.received === "yes";
-      addBubble($("feedBuyer"), "out", received ? "Yes, I received it" : "No, I did not receive it", "you");
-      await settleDelivery(result.runId, received);
-    });
-  });
+  const modal = $("deliveryModal");
+  const yes = $("deliveryYes");
+  const no = $("deliveryNo");
+  if (!modal || !yes || !no) return;
+  yes.disabled = false;
+  no.disabled = false;
+  const pick = async (received) => {
+    yes.disabled = true;
+    no.disabled = true;
+    closeDeliveryModal();
+    addBubble($("feedBuyer"), "out", received ? "Yes" : "No", "you");
+    await settleDelivery(result.runId, received);
+  };
+  yes.onclick = () => pick(true);
+  no.onclick = () => pick(false);
+  if (typeof modal.showModal === "function") {
+    if (!modal.open) modal.showModal();
+    return;
+  }
+  modal.setAttribute("open", "");
 }
 
 async function settleDelivery(runId, received) {
@@ -728,7 +738,7 @@ async function settleDelivery(runId, received) {
   addBubble(
     $("feedBuyer"),
     "inc",
-    received ? "Releasing escrow to the seller…" : "Refunding escrow to your Agent Wallet…",
+    received ? "Releasing escrow to the seller…" : "Dispute raised. Refunding escrow to your Agent Wallet…",
     "ARC Agent",
   );
   try {
@@ -791,11 +801,16 @@ async function runTransaction(prompt, extra = {}) {
   lightStages(result);
   if (result.policy) {
     const rail = result.policy.rail === "DIRECT" ? "Nanopayment" : "Escrow";
-    addCollapseCard($("feedBuyer"), "Policy", `${result.policy.decision} · ${rail}`, {
-      Decision: result.policy.decision,
-      Rail: result.policy.rail === "DIRECT" ? "Nanopayment" : "AuthCapture escrow",
-      Reason: (result.policy.reasons || []).join("; ") || "—",
-    });
+    addCollapseCard(
+      $("feedBuyer"),
+      "Policy",
+      `${result.policy.decision} · ${rail}`,
+      {
+        Decision: result.policy.decision,
+        Rail: result.policy.rail === "DIRECT" ? "Nanopayment" : "AuthCapture escrow",
+      },
+      { listLabel: "Why", list: result.policy.reasons },
+    );
   }
   if (result.policy?.decision === "REJECT") {
     addBubble($("feedBuyer"), "sys", paymentCopy(result));
@@ -810,9 +825,9 @@ async function runTransaction(prompt, extra = {}) {
   showDeliverable(result);
   showVerification(result);
   if (result.awaitingDelivery) {
+    showReceipt(result);
+    await sleep(2500);
     askDelivery(result);
-    playing = false;
-    $("form").querySelector("button").disabled = false;
     await loadIdentities();
     return;
   }

@@ -451,6 +451,28 @@ body {
 .kv-details[open] summary::after { content: "▴"; }
 .kv-details[open] summary { border-bottom: 1px solid var(--border); }
 .kv-details-body { padding: 8px 12px 10px; }
+.kv-list {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+.kv-list-label {
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.kv-list ul {
+  margin: 0;
+  padding-left: 16px;
+}
+.kv-list li {
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.45;
+  margin: 5px 0;
+}
 
 .quote-hero {
   width: min(100%, 260px);
@@ -569,6 +591,31 @@ body {
 }
 .approve-btn.reject { background: transparent; color: var(--text); }
 .approve-btn:disabled { opacity: 0.4; cursor: default; }
+
+.delivery-dialog {
+  width: min(280px, calc(100vw - 32px));
+  border: 1.5px solid var(--text);
+  border-radius: 16px;
+  padding: 20px 18px 16px;
+  background: var(--surface);
+  box-shadow: 6px 6px 0 var(--pink);
+  color: var(--text);
+}
+.delivery-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.45);
+}
+.delivery-q {
+  font-family: var(--display);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.25;
+}
+.delivery-sub {
+  color: var(--muted);
+  font-size: 12px;
+  margin: 6px 0 14px;
+}
 
 .tx-section-title {
   font-size: 9px; color: var(--muted); letter-spacing: 0.08em;

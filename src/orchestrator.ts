@@ -250,7 +250,7 @@ export async function executePurchase(input: ExecuteInput): Promise<ExecuteResul
   });
 
   if (policy.decision === "REJECT") {
-    pushBuyer("policy", { kind: "sys", text: "Fail closed — no payment sent" });
+    pushBuyer("policy", { kind: "sys", text: "Fail closed. No payment sent." });
     const receipt = buildReceipt({
       id: runId,
       buyerAgent: buyerTrust.agentId,
@@ -364,7 +364,7 @@ export async function executePurchase(input: ExecuteInput): Promise<ExecuteResul
       );
       pushBuyer("settle", {
         kind: "inc",
-        text: "Escrow is holding USDC with the operator. Confirm you received it to pay the seller, or say you did not to refund your Agent Wallet.",
+        text: "Escrow is holding USDC with the operator until you confirm delivery.",
       });
       pushSeller("settle", { kind: "sys", text: "Authorized · waiting for buyer delivery confirmation" });
       const receipt = buildReceipt({
@@ -377,6 +377,21 @@ export async function executePurchase(input: ExecuteInput): Promise<ExecuteResul
         payment,
         verification,
         outcome: "HELD",
+      });
+      stages.push(stage("receipt", "Receipt issued", `${receipt.amount} USDC · escrow · HELD`));
+      pushBuyer("receipt", {
+        kind: "card",
+        text: "Receipt",
+        card: {
+          Service: service.name,
+          Amount: `${receipt.amount} USDC`,
+          Rail: "Escrow",
+          Network: "Arc",
+          Status: "HELD",
+          Verification: receipt.verification.status,
+          Tx: `${receipt.paymentTxHash.slice(0, 18)}…`,
+          Mode: receipt.paymentMode,
+        },
       });
       pendingRuns.set(runId, {
         runId,
@@ -518,12 +533,12 @@ export async function settlePurchase(runId: string, received: boolean): Promise<
   } else {
     payment = await voidEscrow(payment);
     stages.push(
-      stage("settle", "Voided on Arc", "You did not receive it · USDC refunded to buyer", "failed"),
+      stage("settle", "Dispute raised", "Item not received · USDC refunded to buyer", "failed"),
     );
-    pushSeller("settle", { kind: "sys", text: "Void · escrow returned to buyer" });
+    pushSeller("settle", { kind: "sys", text: "Dispute raised · escrow returned to buyer" });
     pushBuyer("settle", {
       kind: "inc",
-      text: `${payment.amountUsd} USDC refunded to your Agent Wallet. Seller was not paid.`,
+      text: `Dispute raised. ${payment.amountUsd} USDC refunded to your Agent Wallet. Seller was not paid.`,
     });
     outcome = "VOIDED";
   }
