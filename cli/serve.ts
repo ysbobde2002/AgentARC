@@ -1,3 +1,4 @@
+/** Buyer UI + orchestrator. Also starts the local Arc x402 seller on SELLER_PORT. */
 import { createServer } from "node:http";
 import { existsSync, readFileSync } from "node:fs";
 import { extname, join } from "node:path";
