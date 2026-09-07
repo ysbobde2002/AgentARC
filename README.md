@@ -1,8 +1,8 @@
 # AgentARC
 
-Track 1: **Best Agentic Economy Application with Circle Agent Stack**.
+Track 1: **Best Agentic Economy Application with Circle Agent Stack** · $1,667
 
-A buyer agent holds a Circle Agent Wallet, discovers **our Arc x402 chart seller**, reads live ERC-8004 identity, applies policy, and pays in USDC. Dust calls (ETH tick, OHLC) settle as **Nanopayments** via HTTP 402. The research memo uses **AuthCapture escrow**.
+Build autonomous agents that transact on Arc. A buyer agent holds a Circle Agent Wallet, finds a payable service, decides whether to pay, and settles in USDC. Small live ETH calls are **Nanopayments**. The research memo uses **AuthCapture escrow**.
 
 There is no public x402 seller on Arc testnet, so this repo runs one.
 
@@ -16,139 +16,108 @@ There is no public x402 seller on Arc testnet, so this repo runs one.
 | **Architecture** | https://agentarc-production.up.railway.app/architecture |
 | **Presentation** | https://canva.link/zc8k9kynpnxexvi |
 
-## Run
+## What we built
 
-```bash
-cp .env.example .env
-npm install
-npm run demo
-```
+A working frontend and backend. Agents hold wallets, spend USDC, and settle jobs on Arc using Circle Agent Stack.
 
-- Buyer / UI: [http://localhost:5180](http://localhost:5180)
-- Arc x402 seller: [http://localhost:5181](http://localhost:5181)
-- Architecture: [http://localhost:5180/architecture](http://localhost:5180/architecture), also the **Architecture** button at the bottom-left of the demo
-- Live demo: [https://agentarc-production.up.railway.app](https://agentarc-production.up.railway.app)
-- Presentation: [https://canva.link/zc8k9kynpnxexvi](https://canva.link/zc8k9kynpnxexvi)
+What judges will see paid on Arc:
 
-```bash
-curl -i http://localhost:5181/charts/ETH
-# HTTP 402 Payment Required · network eip155:5042002
-```
+- `Get me the current ETH price. Spend up to $0.05` · DIRECT nanopayment
+- `Get ETH chart details. Spend up to $0.05` · DIRECT OHLC
+- `Buy the ETH research memo. Spend up to $150` · PROTECTED escrow, then capture or void
 
-Try:
+## The four problems
 
-- `Get me the current ETH price. Spend up to $0.05` → DIRECT nanopayment
-- `Get ETH chart details. Spend up to $0.05` → DIRECT OHLC
-- `Buy the ETH research memo. Spend up to $150` → PROTECTED escrow
-- Same memo with **Simulate seller failure** → void
-- `Buy the ETH research memo. Spend up to $50` → reject
+### Identity
 
-Until Circle env vars are pasted, payments run in **adapter** mode. Paste `CIRCLE_API_KEY` + `CIRCLE_ENTITY_SECRET`, run `npm run setup:wallets`, fund at [faucet.circle.com](https://faucet.circle.com).
+Who is this agent, and who do they represent? How do you refuse a wallet that has no identity at all?
 
-Do **not** paste Ethereum Sepolia EOA private keys. Circle Agent Wallets come from `npm run setup:wallets`.
+Circle Agent Wallets give the buyer and seller a real USDC identity on Arc. We fail closed if ERC-8004 identity is missing. Only that wallet is allowed to spend.
+
+- Circle Agent Wallets
+- ERC-8004 · fail closed if identity is missing
+
+Buyer [#9638](https://testnet.8004scan.io/agents/sepolia/9638) · seller [#6832](https://testnet.8004scan.io/agents/sepolia/6832)
+
+### Discovery and intent matching
+
+What did the human actually want, and which service can take USDC for it? How do you avoid paying the wrong seller, or overpaying?
+
+We parse intent and the spend cap from the prompt. Circle Agent Marketplace gives a live price band. The thing we actually pay is our own x402 seller on Arc, because Circle's public index has no Arc listing yet.
+
+- Natural-language intent + spend cap
+- x402 seller on Arc
+- Circle Agent Marketplace (median only)
+
+### Policy engine
+
+Should this agent pay at all? If yes, is this a nanopayment, or does the money need to sit until delivery is proven?
+
+Policy is ours. Circle supplies the two rails: Nanopayments for small instant jobs, AuthCapture escrow for large or lagged ones. Overspend, missing identity, or a bad seller is a reject. No USDC leaves the Agent Wallet.
+
+- Reject: no identity / over spend cap / 3 or more failures
+- DIRECT: $1 or less, instant, objective → Nanopayments
+- PROTECTED: $100 or more, or lagged → AuthCapture
+
+### Protected settlement
+
+If the seller fails, how does the buyer get the money back without a chargeback? If they deliver, how does the seller stay paid?
+
+On Arc we authorize USDC into escrow, verify independently, then capture to the seller or void to the buyer. After capture it is final. Nanopayments skip the hold because the amount is dust.
+
+- Buyer: void / refund before capture
+- Merchant: capture is final · no chargebacks
+- AuthCapture: authorize → verify → capture or void
+- Nanopayments: instant, no per-call refund
 
 ## Architecture
 
-High-level loop: a shopping or chart prompt becomes an Arc USDC payment only after identity, policy, and (for escrow) independent verification.
+A prompt becomes an Arc USDC payment only after identity, policy, and (for escrow) independent verification.
 
 ```mermaid
 flowchart LR
-  Human[Human buyer] --> UI[Phone UI]
-  UI -->|POST /api/turn| Orch[Orchestrator :5180]
-  Orch --> Intent[Parse intent + spend cap]
-  Intent --> Disc{Which catalog?}
-  Disc -->|chocolates| UCP[Shopify UCP]
-  Disc -->|live ETH| Seller[Arc seller :5181]
-  Disc -->|BTC / historical| Stop1[Reject unpaid]
-  UCP --> Trust
-  Seller --> Trust[ERC-8004 8004scan]
+  Human[Human buyer] --> UI[Demo UI]
+  UI --> Orch[Orchestrator]
+  Orch --> Intent[Intent + spend cap]
+  Intent --> Seller[x402 seller on Arc]
+  Seller --> Trust[ERC-8004 identity]
   Trust --> Policy[Policy engine]
-  Policy -->|REJECT| Stop2[No payment]
-  Policy -->|DIRECT| Nano[x402 HTTP 402]
+  Policy -->|REJECT| Stop[No payment]
+  Policy -->|DIRECT| Nano[Nanopayments]
   Policy -->|PROTECTED| Escrow[AuthCapture]
   Nano --> Verify[Independent verify]
   Escrow --> Verify
-  Verify -->|pass| Receipt[Receipt + explorer]
-  Verify -->|fail| Void[No quote / void escrow]
+  Verify -->|pass| Receipt[Receipt]
+  Verify -->|fail| Void[Void escrow]
 ```
-
-### Policy engine (`src/policy.ts`)
-
-First matching rule wins. Fail closed. Reputation is a count, never a single score.
 
 ```mermaid
 flowchart TD
   Start[evaluatePolicy] --> Id{Identity verified?}
   Id -->|no| R1[REJECT]
-  Id -->|yes| Cap{Price greater than spend cap?}
+  Id -->|yes| Cap{Over spend cap?}
   Cap -->|yes| R2[REJECT]
   Cap -->|no| Fail{3 or more seller failures?}
   Fail -->|yes| R3[REJECT]
-  Fail -->|no| Big{Price >= 100 USD or lagged?}
-  Big -->|yes| P1[PROTECTED escrow]
-  Big -->|no| Nano{Price <= 1 USD and instant objective?}
-  Nano -->|yes| D1[DIRECT x402]
-  Nano -->|no| P2[PROTECTED default]
+  Fail -->|no| Big{$100 or more, or lagged?}
+  Big -->|yes| P1[PROTECTED AuthCapture]
+  Big -->|no| Nano{$1 or less, instant, objective?}
+  Nano -->|yes| D1[DIRECT Nanopayment]
+  Nano -->|no| P2[PROTECTED]
 ```
-
-| If | Then |
-|---|---|
-| ERC-8004 identity missing | REJECT |
-| Price > spend cap | REJECT |
-| ≥ 3 recent seller failures | REJECT |
-| Price ≥ $100, or lagged / subjective | PROTECTED AuthCapture |
-| Price ≤ $1, instant, objective (ETH tick / OHLC) | DIRECT x402 nanopayment |
-| Else | PROTECTED |
-
-### Two rails
-
-```mermaid
-flowchart LR
-  subgraph Direct [DIRECT nanopayment]
-    G1[GET /charts/*] --> P402[HTTP 402 PAYMENT-REQUIRED]
-    P402 --> Sign[Buyer signs]
-    Sign --> Retry[PAYMENT-SIGNATURE]
-    Retry --> Data[CoinGecko payload]
-  end
-  subgraph Protected [PROTECTED escrow]
-    Auth[Authorize USDC to operator] --> G2[GET /research/ETH]
-    G2 --> V[Verify schema time price]
-    V --> Human{Human received?}
-    Human -->|yes| Cap2[Capture to seller]
-    Human -->|no| Void2[Void to buyer]
-  end
-```
-
-Identity: buyer [#9638](https://testnet.8004scan.io/agents/sepolia/9638) · seller [#6832](https://testnet.8004scan.io/agents/sepolia/6832) on ERC-8004 Sepolia via 8004scan.
 
 ## Seller catalog
 
 | Path | Price | Rail |
 |---|---|---|
-| `GET /charts/ETH` | 0.01 USDC | x402 402 |
-| `GET /charts/ETH/ohlc` | 0.02 USDC | x402 402 |
-| `GET /research/ETH` | 100 USDC | escrow, then GET |
+| `GET /charts/ETH` | 0.01 USDC | Nanopayment |
+| `GET /charts/ETH/ohlc` | 0.02 USDC | Nanopayment |
+| `GET /research/ETH` | 100 USDC | AuthCapture escrow |
 
-Circle Agent Marketplace is a **price-band signal only**. Those listings are not on Arc.
+## Circle products
 
-## Circle products used
-
-- **Agent Stack** — Agent Wallets, Marketplace discovery (median), Nanopayments
-- **USDC** — unit of account, gas, payment asset
-- **Circle Wallets** — buyer / seller / operator
-- **Nanopayments + Gateway** — batched USDC against this seller
-- **Circle Contracts** — `AgentJobEscrow` authorize / capture / void
-
-## Layout
-
-```
-cli/serve.ts                 buyer UI + orchestrator (:5180)
-cli/seller.ts                Arc x402 chart seller (:5181)
-src/seller/                  catalog, HTTP 402, buyer client
-src/orchestrator.ts          discover → trust → policy → pay → verify → settle
-src/policy.ts                DIRECT vs PROTECTED
-src/trust.ts                 live ERC-8004
-src/circle/                  Wallets, nanopayments, escrow
-ui/architecture.html         high-level design
-docs/SUBMISSION.md           bounty write-up
-```
+- **Arc** · where the agents transact
+- **USDC** · unit of account, gas, and payment asset
+- **Agent Stack** · Agent Wallets, Marketplace (median only), Nanopayments
+- **Circle Wallets** · buyer, seller, and operator
+- **Circle Contracts** · `AgentJobEscrow` authorize, capture, void
