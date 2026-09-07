@@ -1,0 +1,52 @@
+{
+  "products": [
+    {
+      "productId": "fb-choco-1",
+      "title": "Dark Sea Salt Truffles 12pc",
+      "merchantName": "Cocoa House",
+      "priceCents": 899,
+      "imageUrl": "",
+      "keywords": ["chocolate", "chocolates", "cocoa", "truffle", "candy"]
+    },
+    {
+      "productId": "fb-choco-2",
+      "title": "Milk Chocolate Gift Box",
+      "merchantName": "Sweet Factory",
+      "priceCents": 1299,
+      "imageUrl": "",
+      "keywords": ["chocolate", "chocolates", "gift", "candy"]
+    },
+    {
+      "productId": "fb-choco-3",
+      "title": "Vegan Hot Cocoa Mix",
+      "merchantName": "Bean & Bar",
+      "priceCents": 749,
+      "imageUrl": "",
+      "keywords": ["chocolate", "cocoa", "vegan", "drink"]
+    },
+    {
+      "productId": "fb-shoe-1",
+      "title": "Trail Runner Pro",
+      "merchantName": "North Pace Outfitters",
+      "priceCents": 12900,
+      "imageUrl": "",
+      "keywords": ["shoes", "running", "sneakers", "trail"]
+    },
+    {
+      "productId": "fb-shoe-2",
+      "title": "City Knit Sneaker",
+      "merchantName": "Stride Lane",
+      "priceCents": 8900,
+      "imageUrl": "",
+      "keywords": ["shoes", "sneakers", "knit", "walking"]
+    },
+    {
+      "productId": "fb-umb-1",
+      "title": "Compact Storm Umbrella",
+      "merchantName": "Rainfold Co",
+      "priceCents": 2499,
+      "imageUrl": "",
+      "keywords": ["umbrella", "rain", "weather"]
+    }
+  ]
+}
