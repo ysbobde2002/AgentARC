@@ -187,6 +187,10 @@ function renderWalletPop(role) {
     walletSectionHtml("Spend policy", {
       Rule: wallet?.spendPolicy?.note || "—",
       x402: wallet?.spendPolicy?.x402 ? "enabled" : "receive",
+      Escrow:
+        role === "buyer"
+          ? "AuthCapture holds USDC until you confirm delivery"
+          : "Seller cannot spend escrowed USDC until capture",
     }) +
     `<div class="pop-section">Last 3 transactions</div>` +
     txListHtml(role);
@@ -958,6 +962,22 @@ async function runTourStep({ step, total, title, body, target, nextLabel = "Next
   }
 }
 
+function closeAllPops() {
+  document.querySelectorAll(".pop-wrap").forEach((w) => w.classList.remove("open"));
+}
+
+async function openBuyerProfile() {
+  closeAllPops();
+  $("buyerProfileWrap")?.classList.add("open");
+}
+
+async function openBuyerWallet() {
+  closeAllPops();
+  await refreshReceipts();
+  renderWalletPop("buyer");
+  $("buyerWalletWrap")?.classList.add("open");
+}
+
 async function startShopifyTutorial() {
   if (tourActive || playing) return;
   const token = ++tourToken;
@@ -966,24 +986,78 @@ async function startShopifyTutorial() {
   const fail = $("failToggle");
   if (fail) fail.checked = false;
   closeDeliveryModal();
+  closeAllPops();
   openTourUi();
 
-  const total = 7;
+  const total = 10;
   try {
     await runTourStep({
       step: 1,
       total,
       title: "Shopify walkthrough",
-      body: "We will order chocolates on Shopify, approve the spend from your Circle Agent Wallet, then confirm delivery so escrow can settle.",
+      body: "We will check identity and the Agent Wallet, order chocolates on Shopify, then settle AuthCapture escrow after delivery.",
       target: $("buyerPanel"),
       nextLabel: "Start",
       autoMs: 0,
     });
     if (!tourActive || token !== tourToken) return;
 
-    const chip = document.querySelector('.prompt-chip[data-q="Find me chocolates under $10"]');
+    const profileBtn = $("buyerProfileWrap")?.querySelector("button");
     await runTourStep({
       step: 2,
+      total,
+      title: "Agent identity",
+      body: "Open the ARC Agent profile. This is the ERC-8004 identity used before any USDC leaves the wallet.",
+      target: profileBtn,
+      nextLabel: "Open profile",
+      autoMs: 5500,
+      action: async () => {
+        await openBuyerProfile();
+      },
+    });
+    if (!tourActive || token !== tourToken) return;
+
+    await runTourStep({
+      step: 3,
+      total,
+      title: "ERC-8004 profile",
+      body: "Identity must verify. If it is missing, policy fails closed and nothing is spent.",
+      target: $("buyerPopover"),
+      nextLabel: "Next",
+      autoMs: 6000,
+    });
+    if (!tourActive || token !== tourToken) return;
+
+    const walletBtn = $("buyerWalletWrap")?.querySelector("button");
+    await runTourStep({
+      step: 4,
+      total,
+      title: "Agent Wallet",
+      body: "Open the Circle Agent Wallet. Spend policy shows nanopayments for dust and AuthCapture escrow for protected jobs.",
+      target: walletBtn,
+      nextLabel: "Open wallet",
+      autoMs: 5500,
+      action: async () => {
+        await openBuyerWallet();
+      },
+    });
+    if (!tourActive || token !== tourToken) return;
+
+    await runTourStep({
+      step: 5,
+      total,
+      title: "Escrow in the wallet",
+      body: "Look at Spend policy: escrow holds USDC until you confirm delivery. Seller cannot spend those funds early.",
+      target: $("buyerWalletPop"),
+      nextLabel: "Continue",
+      autoMs: 6500,
+      action: () => closeAllPops(),
+    });
+    if (!tourActive || token !== tourToken) return;
+
+    const chip = document.querySelector('.prompt-chip[data-q="Find me chocolates under $10"]');
+    await runTourStep({
+      step: 6,
       total,
       title: "Ask for something",
       body: "Tap chocolates. ARC Agent searches Shopify with your spend cap.",
@@ -997,7 +1071,7 @@ async function startShopifyTutorial() {
     clearTourHighlight();
     $("tourBody").textContent = "Searching Shopify… watch the seller panel fill with listings.";
     $("tourTitle").textContent = "Discovery";
-    $("tourStep").textContent = `3 / ${total}`;
+    $("tourStep").textContent = `7 / ${total}`;
     placeTourTip($("sellerPanel"));
     await waitWhileBusy();
     await sleep(1500);
@@ -1005,7 +1079,7 @@ async function startShopifyTutorial() {
     if (!tourActive || token !== tourToken) return;
 
     await runTourStep({
-      step: 3,
+      step: 7,
       total,
       title: "Pick a product",
       body: "Shopify listings appear here. We select the recommended item for you.",
@@ -1019,7 +1093,7 @@ async function startShopifyTutorial() {
     const approve = await waitForSelector('button.approve-btn[data-decision="approve"]');
     await sleep(800);
     await runTourStep({
-      step: 4,
+      step: 8,
       total,
       title: "Approve the spend",
       body: "Approve locks the order into policy and AuthCapture escrow. USDC does not leave until delivery is confirmed.",
@@ -1033,7 +1107,7 @@ async function startShopifyTutorial() {
     clearTourHighlight();
     $("tourTitle").textContent = "Policy and escrow";
     $("tourBody").textContent = "Watch the top phases light up. Policy chooses PROTECTED escrow for Shopify purchases. A receipt appears, then the delivery question.";
-    $("tourStep").textContent = `5 / ${total}`;
+    $("tourStep").textContent = `9 / ${total}`;
     placeTourTip($("phases") || document.querySelector(".phases"));
     await waitForSelector("#deliveryModal", {
       timeout: 90000,
@@ -1052,7 +1126,7 @@ async function startShopifyTutorial() {
       modal.insertBefore(inlineNote, modal.firstChild);
     }
     await runTourStep({
-      step: 6,
+      step: 9,
       total,
       title: "Did you receive the item?",
       body: "Yes captures escrow to the seller. No raises a dispute and refunds your Agent Wallet. We will click Yes.",
@@ -1066,21 +1140,23 @@ async function startShopifyTutorial() {
 
     clearTourHighlight();
     $("tourTitle").textContent = "Settling";
-    $("tourBody").textContent = "Escrow is capturing USDC to the seller. Watch the receipt and wallet update.";
-    $("tourStep").textContent = `7 / ${total}`;
+    $("tourBody").textContent = "Escrow is capturing USDC to the seller. Watch the receipt update.";
+    $("tourStep").textContent = `10 / ${total}`;
     placeTourTip($("feedBuyer"));
     await waitWhileBusy();
     await sleep(1800);
     if (!tourActive || token !== tourToken) return;
 
+    await openBuyerWallet();
     await runTourStep({
-      step: 7,
+      step: 10,
       total,
-      title: "You finished a purchase",
-      body: "Try again anytime: ask for flowers, umbrellas, or sneakers with a budget. Use No on the delivery dialog to see a dispute refund.",
-      target: $("buyerPanel"),
+      title: "Wallet after escrow",
+      body: "Open the wallet again. Spend policy and the last transactions show the protected settlement on Arc.",
+      target: $("buyerWalletPop"),
       nextLabel: "Done",
       autoMs: 0,
+      action: () => closeAllPops(),
     });
   } catch (err) {
     if (String(err.message || err) !== "tour-aborted") {
@@ -1088,6 +1164,7 @@ async function startShopifyTutorial() {
     }
   } finally {
     tourActive = false;
+    closeAllPops();
     closeTourUi();
     $("tutorialBtn").disabled = false;
   }
