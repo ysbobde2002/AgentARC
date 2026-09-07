@@ -1,16 +1,26 @@
-# AgentARC — bounty submission
+# AgentARC bounty submission
 
-**Track:** Best Agentic Economy Application with Circle Agent Stack — $1,667
+**Track:** Best Agentic Economy Application with Circle Agent Stack, $1,667
 
 AgentARC is an agent-to-agent marketplace. A buyer agent holds a Circle Agent Wallet, discovers **our own x402 seller on Arc testnet** (ETH spot + OHLC charts), applies a policy engine to real signals, and pays in USDC. Dust calls settle as Nanopayments (HTTP 402). The research memo authorizes into escrow, verifies independently, then captures or voids.
 
-Circle’s public x402 discovery index is mostly Base/Solana. Arc mentors confirmed there is no live public seller on Arc — so this repo runs one (`cli/seller.ts` on port 5181).
+Circle’s public x402 discovery index is mostly Base/Solana. Arc mentors confirmed there is no live public seller on Arc, so this repo runs one (`cli/seller.ts` on port 5181).
 
 This submission is Track 1 only.
 
+## Links
+
+| Field | Value |
+|---|---|
+| **Project** | AgentARC |
+| **Repo** | https://github.com/ysbobde2002/AgentARC |
+| **Live demo** | https://agentarc-production.up.railway.app |
+| **Architecture** | https://agentarc-production.up.railway.app/architecture |
+| **Presentation** | https://canva.link/zc8k9kynpnxexvi |
+
 ## What judges should click
 
-1. Open the demo and run `Get me the current ETH price. Spend up to $0.05`.
+1. Open the [live demo](https://agentarc-production.up.railway.app) and run `Get me the current ETH price. Spend up to $0.05`.
 2. `curl -i http://localhost:5181/charts/ETH` — unpaid is HTTP 402 on `eip155:5042002`.
 3. Run `Get ETH chart details. Spend up to $0.05` — same 402 rail, OHLC candles.
 4. Click **Architecture** at the bottom-left of the demo (or open `/architecture`) for the high-level design: workflow, policy engine, two rails.
@@ -48,4 +58,4 @@ This submission is Track 1 only.
 4. ETH tick in UI → SUCCESS receipt.
 5. ETH chart OHLC → SUCCESS.
 6. Escrow memo + void on failure.
-7. Close: GitHub + `npm run demo`.
+7. Close: GitHub, [live demo](https://agentarc-production.up.railway.app), and [presentation](https://canva.link/zc8k9kynpnxexvi).

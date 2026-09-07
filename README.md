@@ -4,7 +4,17 @@ Track 1: **Best Agentic Economy Application with Circle Agent Stack**.
 
 A buyer agent holds a Circle Agent Wallet, discovers **our Arc x402 chart seller**, reads live ERC-8004 identity, applies policy, and pays in USDC. Dust calls (ETH tick, OHLC) settle as **Nanopayments** via HTTP 402. The research memo uses **AuthCapture escrow**.
 
-There is no public x402 seller on Arc testnet — this repo runs one.
+There is no public x402 seller on Arc testnet, so this repo runs one.
+
+## Links
+
+| Field | Value |
+|---|---|
+| **Project** | AgentARC |
+| **Repo** | https://github.com/ysbobde2002/AgentARC |
+| **Live demo** | https://agentarc-production.up.railway.app |
+| **Architecture** | https://agentarc-production.up.railway.app/architecture |
+| **Presentation** | https://canva.link/zc8k9kynpnxexvi |
 
 ## Run
 
@@ -16,7 +26,9 @@ npm run demo
 
 - Buyer / UI: [http://localhost:5180](http://localhost:5180)
 - Arc x402 seller: [http://localhost:5181](http://localhost:5181)
-- Architecture: [http://localhost:5180/architecture](http://localhost:5180/architecture) — also the **Architecture** button at the bottom-left of the demo
+- Architecture: [http://localhost:5180/architecture](http://localhost:5180/architecture), also the **Architecture** button at the bottom-left of the demo
+- Live demo: [https://agentarc-production.up.railway.app](https://agentarc-production.up.railway.app)
+- Presentation: [https://canva.link/zc8k9kynpnxexvi](https://canva.link/zc8k9kynpnxexvi)
 
 ```bash
 curl -i http://localhost:5181/charts/ETH
