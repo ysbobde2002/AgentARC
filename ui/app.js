@@ -150,7 +150,7 @@ function addQuoteHero(feed, body) {
 
 function scanLink(url) {
   if (!url) return "";
-  return `<a class="scan-link" href="${esc(url)}" target="_blank" rel="noopener noreferrer">Open on 8004scan ↗</a>`;
+  return `<a class="scan-link" href="${esc(url)}" target="_blank" rel="noopener noreferrer">Verify Identity of Agent ↗</a>`;
 }
 
 function kvHtml(title, rows) {
