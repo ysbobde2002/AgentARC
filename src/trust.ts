@@ -1,3 +1,4 @@
+/** Live ERC-8004 identity from 8004scan. Missing identity fails closed. */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { config, ROOT_DIR } from "./config.js";
